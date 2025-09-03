@@ -255,7 +255,54 @@ else :
     st.pyplot(fig)
 
   
+   #Calcul du taux d'energie dissipée 
 
+        
+    df_p = df_p[df_p["agebsq"] > 60]
+    
+    # Calcul Énergie dissipée
+    df_energie = df_p[df_p["numevt"].isin([279, 281])].dropna(subset=["Energie"])
+    energie_moyenne = df_energie.groupby(["Période", "Groupe"])["Energie"].mean().reset_index()
+    
+    # Calcul DPEA
+    df_dpea = df_p[df_p["numevt"] == 242].dropna(subset=["Valeur"])
+    dpea_moyenne = df_dpea.groupby(["Période", "Groupe"])["Valeur"].mean().reset_index()
+    
+    # Calcul taux de variation entre périodes
+    def calcul_taux(df, valeur_col):
+        # Pivot pour avoir les périodes en colonnes
+        pivot = df.pivot(index="Groupe", columns="Période", values=valeur_col)
+        # Taux de variation (%)
+        pivot["Taux variation (%)"] = ((pivot.iloc[:,1] - pivot.iloc[:,0]) / pivot.iloc[:,0]) * 100
+        return pivot.reset_index()
+    
+    energie_variation = calcul_taux(energie_moyenne, "Energie")
+    dpea_variation = calcul_taux(dpea_moyenne, "Valeur")
+    
+    st.subheader("Énergie dissipée – comparaison des périodes")
+    st.dataframe(energie_variation)
+    
+    st.subheader("DPEA – comparaison des périodes")
+    st.dataframe(dpea_variation)
+    
+    # Graphique comparatif Énergie
+    fig, ax = plt.subplots()
+    for grp in energie_variation["Groupe"]:
+        valeurs = energie_moyenne[energie_moyenne["Groupe"] == grp]["Energie"].values
+        ax.bar([grp + " P1", grp + " P2"], valeurs, color=["steelblue","orange"])
+    ax.set_ylabel("Énergie dissipée moyenne (kWh)")
+    ax.set_title("Comparaison Énergie dissipée entre périodes")
+    st.pyplot(fig)
+    
+    # Graphique comparatif DPEA
+    fig, ax = plt.subplots()
+    for grp in dpea_variation["Groupe"]:
+        valeurs = dpea_moyenne[dpea_moyenne["Groupe"] == grp]["Valeur"].values
+        ax.bar([grp + " P1", grp + " P2"], valeurs, color=["steelblue","orange"])
+    ax.set_ylabel("DPEA moyenne (unités assval2)")
+    ax.set_title("Comparaison DPEA entre périodes")
+    st.pyplot(fig)
+    
 
 
     # 5. Taux d'échec traitement (cuves > 60 jours)
@@ -652,4 +699,5 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
