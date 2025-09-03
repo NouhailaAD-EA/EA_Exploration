@@ -254,85 +254,6 @@ else :
     ax.set_title("Comparaison DPEA")
     st.pyplot(fig)
     
-    #Ajout du taux 
-    # ======================
-    # Calcul du taux de variation entre périodes (Énergie & DPEA)
-    # ======================
-    
-    # Ajouter la colonne Période si elle n'existe pas
-    if "Période" not in df_p.columns:
-        if periode == "18/06/2025 → 31/07/2025":
-            df_p["Période"] = "18/06/2025 → 31/07/2025"
-        elif periode == "18/08/2025 → Aujourd'hui":
-            df_p["Période"] = "18/08/2025 → Aujourd'hui"
-    
-    def calcul_taux_variation(df, valeur_col):
-        """Calcul du taux de variation (%) entre deux périodes pour chaque groupe."""
-        if "Période" not in df.columns or df.empty:
-            return pd.DataFrame()
-        
-        # Regrouper par Groupe et Période
-        grouped = df.groupby(["Groupe", "Période"])[valeur_col].mean().reset_index()
-        
-        # Vérifier qu'on a au moins deux périodes
-        periodes = grouped["Période"].unique()
-        if len(periodes) < 2:
-            return pd.DataFrame()
-        
-        # Pivot pour avoir les périodes en colonnes
-        pivot = grouped.pivot(index="Groupe", columns="Période", values=valeur_col).reset_index()
-        
-        # Calcul du taux de variation (%) entre la première et la deuxième période
-        try:
-            pivot["Taux variation (%)"] = ((pivot[periodes[1]] - pivot[periodes[0]]) / pivot[periodes[0]]) * 100
-        except KeyError:
-            pivot["Taux variation (%)"] = np.nan
-        
-        return pivot
-    
-    # Calcul taux pour Énergie
-    energie_variation = calcul_taux_variation(energie_moyenne, "Energie")
-    if not energie_variation.empty:
-        st.subheader("Énergie dissipée – comparaison des périodes")
-        st.dataframe(energie_variation)
-    else:
-        st.warning("Impossible de calculer la variation d'énergie : données manquantes ou une seule période disponible.")
-    
-    # Calcul taux pour DPEA
-    dpea_variation = calcul_taux_variation(dpea_moyenne, "Valeur")
-    if not dpea_variation.empty:
-        st.subheader("DPEA – comparaison des périodes")
-        st.dataframe(dpea_variation)
-    else:
-        st.warning("Impossible de calculer la variation de DPEA : données manquantes ou une seule période disponible.")
-    
-    # ======================
-    # Graphiques comparatifs
-    # ======================
-    def plot_comparatif(pivot_df, col_valeur, titre, couleurs=["steelblue","orange"]):
-        if pivot_df.empty:
-            return
-        fig, ax = plt.subplots(figsize=(8,5))
-        periodes = [c for c in pivot_df.columns if c not in ["Groupe", "Taux variation (%)"]]
-        
-        for i, grp in enumerate(pivot_df["Groupe"]):
-            valeurs = pivot_df.loc[i, periodes].values
-            if len(valeurs) == len(couleurs):
-                ax.bar([f"{grp} P{i+1}" for i in range(len(valeurs))], valeurs, color=couleurs)
-        
-        ax.set_ylabel(col_valeur)
-        ax.set_title(titre)
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-        st.pyplot(fig)
-    
-    # Graphique Énergie
-    plot_comparatif(energie_variation, "Énergie dissipée moyenne (kWh)", "Comparaison Énergie dissipée entre périodes")
-    
-    # Graphique DPEA
-    plot_comparatif(dpea_variation, "DPEA moyenne (unités assval2)", "Comparaison DPEA entre périodes")
-
-
     
     # 5. Taux d'échec traitement (cuves > 60 jours)
     # ======================
@@ -728,6 +649,7 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
 
