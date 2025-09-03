@@ -257,16 +257,7 @@ else :
   
    #Calcul du taux d'energie dissipée 
 
-        
-    df_p = df_p[df_p["agebsq"] > 60]
-    
-    # Calcul Énergie dissipée
-    df_energie = df_p[df_p["numevt"].isin([279, 281])].dropna(subset=["Energie"])
-    energie_moyenne = df_energie.groupby(["Période", "Groupe"])["Energie"].mean().reset_index()
-    
-    # Calcul DPEA
-    df_dpea = df_p[df_p["numevt"] == 242].dropna(subset=["Valeur"])
-    dpea_moyenne = df_dpea.groupby(["Période", "Groupe"])["Valeur"].mean().reset_index()
+ 
     
     # Calcul taux de variation entre périodes
     def calcul_taux(df, valeur_col):
@@ -699,5 +690,6 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
