@@ -8,7 +8,7 @@ from scipy import stats
 
 
 df = pd.read_csv("data_evt_ea.csv")
-df_age = pd.read_csv("data_age_cuve.csv")  # contient codpot, agebsq, date
+df_age = pd.read_csv("data_age_cuve.csv")  
 
 # Sidebar pour choisir période
 
@@ -706,6 +706,7 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
 
