@@ -38,6 +38,11 @@ if periode == "Comparaison Inter-Périodes":
     }
 
     indicateurs = []
+    # Conversion sécurisée de 'dhevt' en datetime
+    df["dhevt"] = pd.to_datetime(df["dhevt"], errors="coerce", utc=True).dt.tz_localize(None)
+
+    # Supprimer les lignes avec date invalide
+    df = df.dropna(subset=["dhevt"])
 
     for per_name, (date_min, date_max) in periodes_comp.items():
         df_per = df[(df["dhevt"].between(date_min, date_max)) & (df["agebsq"] > 60)].copy()
@@ -790,6 +795,7 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
 
