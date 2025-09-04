@@ -5,14 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 from scipy import stats
-# ======================
-# 1. Charger les données
-# ======================
+
 df = pd.read_csv("data_evt_ea.csv")
 df_age = pd.read_csv("data_age_cuve.csv")  # contient codpot, agebsq, date
-  # ======================
-  # Sidebar pour choisir période
-  # ======================
+
+# Sidebar pour choisir période
+
 st.sidebar.title("Paramètres")
 periode = st.sidebar.selectbox(
       "Choisir la période",
@@ -21,11 +19,10 @@ periode = st.sidebar.selectbox(
 CUVES_PAR_GT = 33
 if periode == "Parties notes":
 
-  
-  # Titre de l'application
+
   st.title("Analyse des cuves > 60 jours")
 
-  # Section : Compte rendu synthétique
+  # Compte rendu synthétique
   st.header("Compte rendu synthétique")
 
   st.markdown("""
@@ -53,7 +50,7 @@ if periode == "Parties notes":
   **Conclusion :** Le serrage aide mais ne résout pas le problème fondamental. La stabilité de la cuve nécessite des actions sur le procédé et la régulation automatique.
   """)
 
-  # Section : Questions initiales
+  #Questions initiales
   st.header("Questions à analyser")
 
   st.markdown("""
@@ -65,9 +62,9 @@ if periode == "Parties notes":
   - Quel est l'impact si le serrage intervient beaucoup à cause de cette cause répétitive => plus de dissipation d'energie peut etre   ?
   """)
 else :
-  # ======================
-  # 2. Préparation colonnes
-  # ======================
+ 
+  # Préparation colonnes
+ 
   df = df[df["codpot"].str[1:].str.isdigit()].copy()
   df["cuve"] = df["codpot"].str[1:].astype(int)
   df["Salle"] = df["codpot"].str[0]
@@ -105,9 +102,9 @@ else :
       else:
           st.header("Résultats – Période initiale (01/01/2025 → 01/05/2025)")
 
-          # ======================================================
-          # 1. Énergie dissipée (évts 279 & 281)
-          # ======================================================
+         
+          #Énergie dissipée (évts 279 & 281)
+       
           df_energie = df_p[df_p["numevt"].isin([279, 281])].dropna(subset=["Energie"])
           energie_moyenne = df_energie["Energie"].mean() if not df_energie.empty else np.nan
 
@@ -115,9 +112,9 @@ else :
           st.write(f"Énergie dissipée moyenne : **{energie_moyenne:.2f} kWh**" 
                   if not np.isnan(energie_moyenne) else "Aucune donnée pour l'énergie dissipée.")
 
-          # ======================================================
-          # 2. DPEA (évènement 242)
-          # ======================================================
+         
+          # DPEA (évènement 242)
+         
           df_dpea = df_p[df_p["numevt"] == 242].dropna(subset=["Valeur"])
           dpea_moyenne = df_dpea["Valeur"].mean() if not df_dpea.empty else np.nan
 
@@ -125,9 +122,9 @@ else :
           st.write(f"DPEA moyenne : **{dpea_moyenne:.2f} unités**" 
                   if not np.isnan(dpea_moyenne) else "Aucune donnée pour DPEA.")
 
-          # ======================================================
-          # 3. Taux d’effet d’anode (nombre EA / cuve / jour)
-          # ======================================================
+        
+          #Taux d’effet d’anode (nombre EA / cuve / jour)
+      
           df_ea = df_p[df_p["numevt"] == 241].copy()
           jours = (date_max - date_min).days
           n_cuves = df_p["codpot"].nunique()
@@ -138,9 +135,9 @@ else :
           st.write(f"Taux moyen d’effet d’anode : **{taux_ea:.4f} EA / cuve / jour**" 
                   if not np.isnan(taux_ea) else "Aucune donnée pour l’effet d’anode.")
 
-          # ======================================================
-          # 4. Taux d’échec (251, 263, 271)
-          # ======================================================
+         
+          # Taux d’échec (251, 263, 271)
+          
           causes = {
               263: "Boucles max",
               251: "Effet d’anode récent",
@@ -181,7 +178,7 @@ else :
               st.pyplot(fig)
 
           
-          # 5. Test statistique (homogénéité des taux d’échec)
+          #Test statistique (homogénéité des taux d’échec)
           
           st.subheader("Test statistique – Homogénéité des taux d’échec")
           if len(df_taux) >= 2:
@@ -202,10 +199,73 @@ else :
           else:
               st.write("Test statistique non applicable (une seule cause ou aucune donnée).")
 
+            # ----------------------------------------------------------
+          # Comparaisons internes : Cuves paires vs impaires et Salles A vs B
+          # ----------------------------------------------------------
+          
+          st.subheader("Comparaisons internes – Paires vs Impaires / Salles A vs B")
+          
+          # Filtrer cuves > 60 jours pour la période initiale
+          df_internal = df_p[df_p["agebsq"] > 60].copy()
+          
+          # Comparaison cuves paires vs impaires
+          df_internal["Type cuve"] = df_internal["serrage"].map({0: "Paired (Référence)", 1: "Impaired (Test)"})
+          
+          # Énergie dissipée
+          df_energy_pair = df_internal[df_internal["numevt"].isin([279, 281])].dropna(subset=["Energie"])
+          energie_moyenne_pair = df_energy_pair.groupby("Type cuve")["Energie"].mean().reset_index()
+          st.subheader("Énergie dissipée – Paires vs Impaires")
+          st.dataframe(energie_moyenne_pair)
+          
+          fig, ax = plt.subplots()
+          ax.bar(energie_moyenne_pair["Type cuve"], energie_moyenne_pair["Energie"], color=["steelblue","orange"])
+          ax.set_ylabel("Énergie dissipée moyenne (kWh)")
+          ax.set_title("Comparaison Énergie dissipée – Paires vs Impaires")
+          st.pyplot(fig)
+          
+          # DPEA
+          df_dpea_pair = df_internal[df_internal["numevt"] == 242].dropna(subset=["Valeur"])
+          dpea_moyenne_pair = df_dpea_pair.groupby("Type cuve")["Valeur"].mean().reset_index()
+          st.subheader("DPEA – Paires vs Impaires")
+          st.dataframe(dpea_moyenne_pair)
+          
+          fig, ax = plt.subplots()
+          ax.bar(dpea_moyenne_pair["Type cuve"], dpea_moyenne_pair["Valeur"], color=["steelblue","orange"])
+          ax.set_ylabel("DPEA moyenne (unités assval2)")
+          ax.set_title("Comparaison DPEA – Paires vs Impaires")
+          st.pyplot(fig)
+          
+          # Comparaison Salles A vs B
+          st.subheader("Comparaison Salles A vs B")
+          df_internal["Salle"] = df_internal["Salle"].map({"A": "Salle A", "B": "Salle B"})
+          
+          # Énergie dissipée
+          df_energy_salle = df_internal[df_internal["numevt"].isin([279, 281])].dropna(subset=["Energie"])
+          energie_moyenne_salle = df_energy_salle.groupby("Salle")["Energie"].mean().reset_index()
+          st.dataframe(energie_moyenne_salle)
+          
+          fig, ax = plt.subplots()
+          ax.bar(energie_moyenne_salle["Salle"], energie_moyenne_salle["Energie"], color=["green","purple"])
+          ax.set_ylabel("Énergie dissipée moyenne (kWh)")
+          ax.set_title("Comparaison Énergie dissipée – Salles A vs B")
+          st.pyplot(fig)
+          
+          # DPEA
+          df_dpea_salle = df_internal[df_internal["numevt"] == 242].dropna(subset=["Valeur"])
+          dpea_moyenne_salle = df_dpea_salle.groupby("Salle")["Valeur"].mean().reset_index()
+          st.dataframe(dpea_moyenne_salle)
+          
+          fig, ax = plt.subplots()
+          ax.bar(dpea_moyenne_salle["Salle"], dpea_moyenne_salle["Valeur"], color=["green","purple"])
+          ax.set_ylabel("DPEA moyenne (unités assval2)")
+          ax.set_title("Comparaison DPEA – Salles A vs B")
+          st.pyplot(fig)
+
+
   else:
 
   
-    # 3. Filtrage selon période
+    #Filtrage selon période
     
     if periode == "18/06/2025 → 31/07/2025":
         date_min, date_max = datetime(2025,6,18), datetime(2025,7,31)
@@ -217,12 +277,12 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
 
-    # ======================
-    # 4. Analyses & Visualisations
-    # ======================
+  
+    #Analyses & Visualisations
+    
     st.header(f"Résultats {periode}")
 
-    # --- Énergie dissipée ---
+    #Énergie dissipée
 
 
     df_p = df_p[df_p["agebsq"] > 60] 
@@ -240,7 +300,7 @@ else :
 
 
 
-    # --- DPEA ---
+    #DPEA 
     df_p = df_p[df_p["agebsq"] > 60] 
     df_dpea = df_p[df_p["numevt"]==242].dropna(subset=["Valeur"])
     dpea_moyenne = df_dpea.groupby("Groupe")["Valeur"].mean().reset_index()
@@ -255,8 +315,8 @@ else :
     st.pyplot(fig)
     
     
-    # 5. Taux d'échec traitement (cuves > 60 jours)
-    # ======================
+    #Taux d'échec traitement (cuves > 60 jours)
+   
     st.subheader("Taux d'échec de traitement (cuves > 60 jours)")
 
     # Événements d’échec à analyser
@@ -286,7 +346,7 @@ else :
     df_taux = pd.DataFrame(results)
     st.dataframe(df_taux)
 
-    # Graphique comparatif
+    # Graphique comparatif des echecs
     fig, ax = plt.subplots()
     for cause in df_taux["Cause"].unique():
         data_cause = df_taux[df_taux["Cause"] == cause]
@@ -301,9 +361,8 @@ else :
 
     
 
-    # ======================
-    # 6. Étude de significativité
-    # ======================
+    # Étude de significativité
+    
     st.subheader("Tests de significativité (Chi² ou Fisher)")
 
     resume_tests = []  # pour récapitulatif global
@@ -349,9 +408,9 @@ else :
     st.dataframe(df_resume)
 
 
-    # ======================
-    # 7) Synthèse dédiée — période du 18/08/2025 → Aujourd'hui
-    # ======================
+   
+    #Synthèse dédiée — période du 18/08/2025 → Aujourd'hui
+    
     if periode == "18/08/2025 → Aujourd'hui":
         st.subheader("Synthèse — Période 18/08/2025 → Aujourd'hui (A vs B)")
 
@@ -424,9 +483,9 @@ else :
 
     from scipy import stats
 
-    # ======================
-    # 6. Échec global (toutes causes confondues)
-    # ======================
+    
+    #Échec global (toutes causes confondues)
+   
     st.subheader("Échec global (toutes causes confondues, cuves > 60 jours)")
 
     # Reprendre df_echec (cuves > 60 jours)
@@ -470,17 +529,12 @@ else :
     - Ratio des risques (A/B) : {rr:.3f}
     - Test : {test}, p-value = {pval:.4f} → Significatif : {signif}
     """)
-    # 5. Taux de serrage (cuves > 60 jours) - Ensemble Test uniquement
-    # ================================================================
+
+  
 
     st.subheader("Taux de serrage - Ensemble Test uniquement (cuves > 60 jours)")
 
 
-
-
-
-
-        #Pour la période initiale 
 
     # Recréer la colonne Période selon le choix de l'utilisateur
     if periode == "18/06/2025 → 31/07/2025":
@@ -495,7 +549,7 @@ else :
     # Filtrer cuves de plus de 60 jours et appartenant uniquement à l'ensemble Test
     df_test = df_p[(df_p["agebsq"] > 60) & (df_p["Groupe"] == groupe_test)].copy()
 
-  # Définir les causes de serrage
+    # Définir les causes de serrage
     serrage_causes = {
       "Taux de serrage global": [949],   # seulement 949 au numérateur
       "Taux de serrage (Boucles max)": [945],
@@ -537,7 +591,7 @@ else :
     if not df_taux_serrage_test.empty:
         st.dataframe(df_taux_serrage_test)
 
-        # Graphique comparatif Test uniquement
+    # Graphique comparatif Test uniquement
         fig, ax = plt.subplots(figsize=(10, 6))
         bar_width = 0.35
         periodes_labels = df_taux_serrage_test["Période"].unique()
@@ -567,13 +621,13 @@ else :
     for per in periodes:
         df_per = df_taux_serrage_test[df_taux_serrage_test["Période"] == per]
         
-        # Récupérer les valeurs des causes
+    # Récupérer les valeurs des causes
         parts = {
             "Boucles max": df_per[df_per["Cause Serrage"] == "Taux de serrage (Boucles max)"]["n serrage"].sum(),
             "EA récent": df_per[df_per["Cause Serrage"] == "Taux de serrage (EA récent)"]["n serrage"].sum()
         }
         
-        # Calculer les "autres causes" comme différence avec le global
+    # Calculer les "autres causes" comme différence avec le global
         n_global = df_per[df_per["Cause Serrage"] == "Taux de serrage global"]["n serrage"].sum()
         autres = n_global - sum(parts.values())
         parts["Autres causes"] = max(autres, 0)  # éviter les valeurs négatives
@@ -649,6 +703,7 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
 
