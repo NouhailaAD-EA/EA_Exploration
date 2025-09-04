@@ -15,98 +15,9 @@ df_age = pd.read_csv("data_age_cuve.csv")  # contient codpot, agebsq, date
 st.sidebar.title("Paramètres")
 periode = st.sidebar.selectbox(
       "Choisir la période",
-      ["18/06/2025 → 31/07/2025", "18/08/2025 → Aujourd'hui","Période initiale","Parties notes","Comparaison Inter-Périodes"]
+      ["18/06/2025 → 31/07/2025", "18/08/2025 → Aujourd'hui","Période initiale","Parties notes"]
   )
 CUVES_PAR_GT = 33
-
-
-
-
-
-#Comparaison inter-période#
-
-
-
-if periode == "Comparaison Inter-Périodes":
-    st.header("Comparaison Inter-Périodes – Indicateurs clés")
-
-    # Définir les périodes à comparer
-    periodes_comp = {
-        "Période initiale": (datetime(2025,1,1), datetime(2025,5,1)),
-        "18/06/2025 → 31/07/2025": (datetime(2025,6,18), datetime(2025,7,31)),
-        "18/08/2025 → Aujourd'hui": (datetime(2025,8,18), datetime.today())
-    }
-
-    indicateurs = []
-    # Conversion sécurisée de 'dhevt' en datetime
-    df["dhevt"] = pd.to_datetime(df["dhevt"], errors="coerce", utc=True).dt.tz_localize(None)
-
-    # Supprimer les lignes avec date invalide
-    df = df.dropna(subset=["dhevt"])
-
-    for per_name, (date_min, date_max) in periodes_comp.items():
-        df_per = df[(df["dhevt"].between(date_min, date_max)) & (df["agebsq"] > 60)].copy()
-        n_cuves = df_per["codpot"].nunique()
-        jours = (date_max - date_min).days
-
-        # Taux d'effet d'anode
-        df_ea = df_per[df_per["numevt"] == 241]
-        total_ea = len(df_ea)
-        taux_ea = total_ea / (n_cuves * jours) if n_cuves > 0 and jours > 0 else np.nan
-
-        # Énergie dissipée
-        df_energy = df_per[df_per["numevt"].isin([279, 281])].dropna(subset=["Energie"])
-        energie_moy = df_energy["Energie"].mean() if not df_energy.empty else np.nan
-
-        # DPEA
-        df_dpea = df_per[df_per["numevt"] == 242].dropna(subset=["Valeur"])
-        dpea_moy = df_dpea["Valeur"].mean() if not df_dpea.empty else np.nan
-
-        # Taux d'échec global (toutes causes)
-        causes = [263, 251, 271]
-        df_per["Echec"] = df_per["numevt"].isin(causes).astype(int)
-        taux_echec = df_per["Echec"].sum() / n_cuves if n_cuves > 0 else np.nan
-
-        indicateurs.append({
-            "Période": per_name,
-            "Taux EA (EA / cuve / jour)": taux_ea,
-            "Énergie dissipée moyenne (kWh)": energie_moy,
-            "DPEA moyenne (unités assval2)": dpea_moy,
-            "Taux échec global (%)": taux_echec*100 if not np.isnan(taux_echec) else np.nan
-        })
-
-    df_indic = pd.DataFrame(indicateurs)
-    st.dataframe(df_indic)
-
-    # Graphe comparatif multi-indicateurs
-    fig, ax = plt.subplots(figsize=(10,6))
-    x = np.arange(len(df_indic["Période"]))
-    width = 0.2
-
-    ax.bar(x - width, df_indic["Taux EA (EA / cuve / jour)"], width, label="Taux EA")
-    ax.bar(x, df_indic["Énergie dissipée moyenne (kWh)"], width, label="Énergie dissipée")
-    ax.bar(x + width, df_indic["DPEA moyenne (unités assval2)"], width, label="DPEA")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(df_indic["Période"], rotation=30, ha="right")
-    ax.set_ylabel("Valeurs moyennes / taux")
-    ax.set_title("Comparaison inter-périodes – Effet anode, énergie et DPEA")
-    ax.legend()
-    plt.tight_layout()
-    st.pyplot(fig)
-
-    # Conclusion bénéfique pour le serrage
-    st.subheader("Synthèse – Impact du serrage sur l’effet d’anode")
-    st.markdown("""
-    - On peut observer l’évolution du **taux d’effet d’anode**, de l’**énergie dissipée** et de la **DPEA** à travers les périodes.
-    - Si le taux d’échec diminue et l’énergie/DPEA se stabilise après interventions de serrage, cela indique un **impact positif du serrage** sur la stabilité des cuves.
-    - Permet de justifier des actions préventives ou correctives selon les résultats observés.
-    """)
-
-
-
-
-
 
 
 if periode == "Parties notes":
@@ -795,6 +706,7 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
 
