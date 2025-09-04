@@ -202,9 +202,9 @@ else :
           else:
               st.write("Test statistique non applicable (une seule cause ou aucune donnée).")
 
-            # ----------------------------------------------------------
+           
           # Comparaisons internes : Cuves paires vs impaires et Salles A vs B
-          # ----------------------------------------------------------
+          
           
           st.subheader("Comparaisons internes – Paires vs Impaires / Salles A vs B")
           
@@ -316,7 +316,7 @@ else :
     ax.set_ylabel("DPEA moyenne (unités assval2)")
     ax.set_title("Comparaison DPEA")
     st.pyplot(fig)
-    
+
     
     #Taux d'échec traitement (cuves > 60 jours)
    
@@ -706,6 +706,7 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
 
