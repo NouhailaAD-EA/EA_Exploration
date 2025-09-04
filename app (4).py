@@ -27,7 +27,7 @@ CUVES_PAR_GT = 33
 
 
 
-if comparaison_periode == "Comparaison Inter-Périodes":
+if periode == "Comparaison Inter-Périodes":
     st.header("Comparaison Inter-Périodes – Indicateurs clés")
 
     # Définir les périodes à comparer
@@ -790,5 +790,6 @@ else :
         df_p = df[df["dhevt"].between(date_min, date_max)].copy()
         df_p["Groupe"] = df_p["Salle"].map({"A": "Test (Salle A)", "B": "Référence (Salle B)"})
         df_p["Période"] = "18/08/2025 → Aujourd'hui"
+
 
 
